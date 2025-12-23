@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CRT Terminal Card</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            width: 1080px;
+            height: 1920px;
+            background: #000;
+            overflow: hidden;
+            position: relative;
+            font-family: 'Courier New', monospace;
+            cursor: none;
+        }
+
+        /* CRT Экран */
+        .crt {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            background: #000;
+            animation: monitorOn 2s ease-in-out;
+        }
+
+        /* Сетка */
+        .grid {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(0, 255, 65, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 255, 65, 0.03) 1px, transparent 1px);
+            background-size: 30px 30px;
+            opacity: 0;
+            animation: fadeIn 0.5s 1.5s forwards;
+        }
+
+        /* Scanlines */
+        .scanlines {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                transparent 50%,
+                rgba(0, 0, 0, 0.25) 50%
+            );
+            background-size: 100% 4px;
+            opacity: 0.3;
+            animation: scanlines 0.3s linear infinite;
+        }
+
+        @keyframes scanlines {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(4px); }
+        }
+
+        /* Мерцание */
+        .flicker {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 255, 65, 0.02);
+            animation: flicker 0.15s infinite;
+            opacity: 0;
+            animation-delay: 2s;
+        }
+
+        @keyframes flicker {
+            0%, 100% { opacity: 0; }
+            50% { opacity: 1; }
+        }
+
+        /* Выпуклость */
+        .bulge {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(
+                ellipse at center,
+                transparent 40%,
+                rgba(0, 0, 0, 0.5) 100%
+            );
+            pointer-events: none;
+        }
+
+        /* Контент */
+        .terminal {
+            position: absolute;
+            top: 200px;
+            left: 100px;
+            right: 100px;
+            color: #00FF41;
+            font-size: 42px;
+            line-height: 1.8;
+            text-shadow: 0 0 10px #00FF41, 0 0 20px rgba(0, 255, 65, 0.5);
+            z-index: 10;
+        }
+
+        .line {
+            height: 75px;
+            overflow: hidden;
+            white-space: nowrap;
+            opacity: 0;
+        }
+
+        .cursor {
+            display: inline-block;
+            width: 25px;
+            height: 55px;
+            background: #00FF41;
+            vertical-align: text-bottom;
+            animation: blink 1s infinite, pulse 2s infinite;
+            box-shadow: 0 0 15px #00FF41;
+        }
+
+        @keyframes blink {
+            0%, 49% { opacity: 1; }
+            50%, 100% { opacity: 0; }
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scaleY(1); }
+            50% { transform: scaleY(0.9); }
+        }
+
+        /* Glitch эффект */
+        .glitch {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(0, 0, 0, 0.15),
+                rgba(0, 0, 0, 0.15) 2px,
+                transparent 2px,
+                transparent 8px
+            );
+            opacity: 0;
+            pointer-events: none;
+            z-index: 50;
+        }
+
+        .glitch.active {
+            animation: glitch 0.5s;
+        }
+
+        @keyframes glitch {
+            0% { 
+                opacity: 0; 
+                transform: translateX(0);
+            }
+            20% { 
+                opacity: 1; 
+                transform: translateX(-20px);
+                filter: hue-rotate(90deg);
+            }
+            40% { 
+                transform: translateX(20px);
+                filter: hue-rotate(180deg);
+            }
+            60% { 
+                transform: translateX(-10px);
+                filter: hue-rotate(270deg);
+            }
+            80% { 
+                transform: translateX(10px);
+                filter: hue-rotate(360deg);
+            }
+            100% { 
+                opacity: 0; 
+                transform: translateX(0);
+            }
+        }
+
+        /* ASCII арт */
+        .ascii-corner {
+            position: absolute;
+            color: #00CC33;
+            font-size: 24px;
+            opacity: 0.3;
+            font-family: monospace;
+        }
+
+        .ascii-top-left {
+            top: 50px;
+            left: 50px;
+        }
+
+        .ascii-bottom-right {
+            bottom: 50px;
+            right: 50px;
+        }
+
+        /* Дыхание экрана */
+        @keyframes breathe {
+            0%, 100% { opacity: 0.8; }
+            50% { opacity: 1; }
+        }
+
+        .breathing {
+            animation: breathe 4s infinite;
+        }
+
+        /* Ссылка */
+        .link {
+            color: #00FFFF;
+            text-shadow: 0 0 15px #00FFFF;
+            opacity: 0;
+        }
+
+        .link.highlight {
+            animation: linkHighlight 1s forwards;
+        }
+
+        @keyframes linkHighlight {
+            0% { 
+                opacity: 0; 
+                text-shadow: 0 0 5px #00FFFF;
+            }
+            50% { 
+                opacity: 1; 
+                text-shadow: 0 0 30px #00FFFF, 0 0 50px rgba(0, 255, 255, 0.8);
+            }
+            100% { 
+                opacity: 1; 
+                text-shadow: 0 0 15px #00FFFF;
+            }
+        }
+
+        /* Monitor power on */
+        @keyframes monitorOn {
+            0% { 
+                transform: scale(0.8); 
+                filter: brightness(0) contrast(2);
+                opacity: 0;
+            }
+            50% {
+                transform: scale(1.05);
+                filter: brightness(0.5) contrast(1.5);
+                opacity: 0.8;
+            }
+            100% { 
+                transform: scale(1); 
+                filter: brightness(1) contrast(1);
+                opacity: 1;
+            }
+        }
+
+        @keyframes fadeIn {
+            to { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <div class="crt">
+        <div class="grid"></div>
+        <div class="scanlines"></div>
+        <div class="flicker"></div>
+        <div class="bulge"></div>
+        <div class="glitch" id="glitch"></div>
+        
+        <!-- ASCII арт -->
+        <pre class="ascii-corner ascii-top-left">╔═══╗
+║███║
+╚═══╝</pre>
+        <pre class="ascii-corner ascii-bottom-right">┌───┐
+│░▒▓│
+└───┘</pre>
+
+        <!-- Терминал -->
+        <div class="terminal" id="terminal">
+            <div class="line" id="line1"></div>
+            <div class="line" id="line2"></div>
+            <div class="line" id="line3"></div>
+            <div class="line" id="line4"></div>
+            <div class="line" id="line5"></div>
+            <div class="line" id="line6"></div>
+            <div class="line" id="line7"></div>
+            <div class="line" id="line8"></div>
+        </div>
+    </div>
+
+    <!-- Audio Context -->
+    <script>
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+        // Генератор звуков
+        function playSound(type, duration = 0.1, frequency = 440) {
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            const filter = audioContext.createBiquadFilter();
+            
+            oscillator.connect(filter);
+            filter.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            switch(type) {
+                case 'click':
+                    oscillator.type = 'square';
+                    oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+                    filter.type = 'lowpass';
+                    filter.frequency.setValueAtTime(2000, audioContext.currentTime);
+                    gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.05);
+                    break;
+                    
+                case 'glitch':
+                    oscillator.type = 'sawtooth';
+                    oscillator.frequency.setValueAtTime(Math.random() * 2000 + 100, audioContext.currentTime);
+                    filter.type = 'highpass';
+                    filter.frequency.setValueAtTime(1000, audioContext.currentTime);
+                    gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+                    break;
+                    
+                case 'ping':
+                    oscillator.type = 'sine';
+                    oscillator.frequency.setValueAtTime(440, audioContext.currentTime);
+                    filter.type = 'lowpass';
+                    filter.frequency.setValueAtTime(2000, audioContext.currentTime);
+                    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+                    break;
+                    
+                case 'powerOn':
+                    oscillator.type = 'sawtooth';
+                    oscillator.frequency.setValueAtTime(50, audioContext.currentTime);
+                    oscillator.frequency.exponentialRampToValueAtTime(1000, audioContext.currentTime + 0.5);
+                    filter.type = 'lowpass';
+                    filter.frequency.setValueAtTime(800, audioContext.currentTime);
+                    gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+                    break;
+            }
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + duration);
+        }
+
+        // Фоновый шум
+        function createBackgroundNoise() {
+            const bufferSize = 2 * audioContext.sampleRate;
+            const noiseBuffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
+            const output = noiseBuffer.getChannelData(0);
+            
+            for (let i = 0; i < bufferSize; i++) {
+                output[i] = Math.random() * 2 - 1;
+            }
+            
+            const whiteNoise = audioContext.createBufferSource();
+            whiteNoise.buffer = noiseBuffer;
+            whiteNoise.loop = true;
+            
+            const filter = audioContext.createBiquadFilter();
+            filter.type = 'lowpass';
+            filter.frequency.setValueAtTime(800, audioContext.currentTime);
+            
+            const gainNode = audioContext.createGain();
+            gainNode.gain.setValueAtTime(0.02, audioContext.currentTime);
+            
+            whiteNoise.connect(filter);
+            filter.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            whiteNoise.start(0);
+            return whiteNoise;
+        }
+
+        // Анимация текста
+        const data = {
+            username: "lord_of_the_craim",
+            domain: "craim-lab",
+            os: "Linux x86_64",
+            host: "Russia",
+            uptime: "14 years",
+            shell: "gemini 3 (vibecoding)",
+            langs: "ru (native)",
+            project: "Telegram Mini App",
+            site: "https://craim-lab.ru"
+        };
+
+        async function typeText(element, text, delay = 50) {
+            element.style.opacity = 1;
+            for (let i = 0; i < text.length; i++) {
+                element.textContent += text[i];
+                playSound('click', 0.05);
+                await new Promise(r => setTimeout(r, delay));
+            }
+            element.innerHTML += '<span class="cursor"></span>';
+        }
+
+        async function runAnimation() {
+            // Запуск аудио
+            let backgroundNoise;
+            document.addEventListener('click', () => {
+                audioContext.resume();
+                if (!backgroundNoise) {
+                    backgroundNoise = createBackgroundNoise();
+                }
+            }, { once: true });
+
+            const terminal = document.getElementById('terminal');
+            const glitch = document.getElementById('glitch');
+
+            // Ждем 2 секунды (включение монитора)
+            await new Promise(r => setTimeout(r, 2000));
+            playSound('powerOn', 0.5);
+
+            // Печать приглашения
+            const prompt = `[${data.username}@${data.domain}]:~$ `;
+            await typeText(document.getElementById('line1'), prompt, 60);
+            await new Promise(r => setTimeout(r, 500));
+
+            // Печать данных
+            const lines = [
+                `OS: ${data.os}`,
+                `Host: ${data.host}`,
+                `Uptime: ${data.uptime}`,
+                `Shell: ${data.shell}`,
+                `Langs: ${data.langs}`,
+                `Project: ${data.project}`
+            ];
+
+            for (let i = 0; i < lines.length; i++) {
+                document.getElementById(`line${i + 2}`).style.opacity = 1;
+                document.getElementById(`line${i + 2}`).innerHTML = lines[i] + '<span class="cursor"></span>';
+                playSound('click', 0.1);
+                await new Promise(r => setTimeout(r, 300));
+            }
+
+            await new Promise(r => setTimeout(r, 500));
+
+            // Появление ссылки
+            const linkLine = document.getElementById('line8');
+            linkLine.innerHTML = `<span class="link">${data.site}</span><span class="cursor"></span>`;
+            linkLine.style.opacity = 1;
+            playSound('ping', 0.2);
+            linkLine.querySelector('.link').classList.add('highlight');
+            await new Promise(r => setTimeout(r, 1000));
+
+            // Glitch эффект
+            await new Promise(r => setTimeout(r, 1000));
+            glitch.classList.add('active');
+            playSound('glitch', 0.5);
+            await new Promise(r => setTimeout(r, 500));
+            glitch.classList.remove('active');
+
+            // Дыхание экрана
+            await new Promise(r => setTimeout(r, 500));
+            document.querySelector('.crt').classList.add('breathing');
+        }
+
+        // Запуск
+        runAnimation();
+    </script>
+</body>
+</html>
